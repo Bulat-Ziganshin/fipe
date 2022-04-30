@@ -1,4 +1,4 @@
-FIPE is FP-style approach to C++ implementation of CSP/Unix pipes paradigm. Multiple "processes" can be combined into a single pipe, where each process communicates only with preceding and following processes via "stdin" and "stdout" channels.
+FIPE is FP-style approach to C++ implementation of CSP/Unix pipes paradigm. Multiple "processes" can be combined into a single pipe, where each process communicates only with preceding and following processes via "stdin" and "stdout" channels. NOTE: it lacks implementation ATM.
 
 
 # Design principles
@@ -9,8 +9,7 @@ Pipes:
 - Two processes can be combined into a single process by pipe creation operation:
   - `auto p = p1 | p2;` combines Process<X,Y> and Process<Y,Z> into Process<X,Z>
 - Since result of piping operation is also a process, a pipe containg arbitrary number of processes can be created, even in a loop
-- You can also use back channel to return messages in opposite direction by replacing Y message type on both sides of a pipe with withBackChannel<Y,Yback>:
-  - f.e. a pipe can combine Process<X, withBackChannel<Y,Yback> > with Process< withBackChannel<Y,Yback>, Z>
+- You can also use back channel to return messages in opposite direction by replacing Y message type on both sides of a pipe with withBackChannel<Y,Yback>
 
 Channels:
 - There are many kinds of channels:
@@ -28,3 +27,30 @@ Error propagation:
 - Unhandled exception or just mere finishing of process sends signals requesting cancellation to preceding and following processes in the pipe
 - This signals raises exception on the next send/receive operation performed by the process being signalled
   - ... except for sending data to back channel?
+
+
+# Example: producer | transformer | consumer
+
+First process generates messages, second one transforms them, and third one prints the messages it received.
+
+```C++
+void producer( Pipe<void,int> p) {
+  for (i=1; i<=10; i++)
+    p << i;
+}
+
+void transformer( Pipe<int,double> p) {
+  while (p.ready())
+    p << (p.recv() * 3.14);
+}
+
+void consumer( Pipe<double,void> p) {
+  while (p.ready())
+    cout << p.recv();
+}
+
+main() {
+  run( producer | transformer | consumer);
+}
+```
+
