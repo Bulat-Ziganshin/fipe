@@ -109,5 +109,30 @@ main() {
 }
 ```
 
+# Example: using backward channel to send buffers back after use
 
+```C++
+void producer( Pipe<void, withBackChannel<char*,char*> > p) {
+  for (i=1; i<=5; i++) {
+    p.sendOwnBack(new char[10]);  // push values into our own stdout backward channel
+  }
+  for (i=1; i<=100; i++) {
+    auto buf = p.recvBack();
+    sprintf(buf, "%d\n", i);
+    p.send(buf);
+  }
+  // to do: release the buffers
+}
 
+void consumer( Pipe< withBackChannel<char*,char*>, void> p) {
+  while (p.ready())
+    auto buf = p.recv();
+    cout << buf;
+    p.sendBack(buf);
+  }
+}
+
+main() {
+  run( producer | consumer);
+}
+```
