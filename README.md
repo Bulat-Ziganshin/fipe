@@ -93,3 +93,21 @@ main() {
 }
 ```
 
+# Example: async pipeline
+
+```C++
+main() {
+  auto p = [] (Pipeline<int,int> p) {
+    while (p.ready())
+      p << (p.recv() * 2);
+  };
+  RunningProcess<int,int> rp = runAsync( p | p | p );
+  for (int i=1; i<=5; i++) {
+    rp << i;
+    cout << recv(rp);  // prints 8 16 24 32 40
+  }
+}
+```
+
+
+
